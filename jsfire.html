@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fire!</title>
+<script>const TWO_PI = 6.28318530717958647693;</script>
+<script type="text/javascript">
+const map = (value, in_min, in_max, out_min, out_max) => (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+</script>
+<script>
+// audio manager
+var AudioContext =
+  window.AudioContext || 
+  window.webkitAudioContext || 
+  window.mozAudioContext || 
+  window.oAudioContext || 
+  window.msAudioContext;
+  
+const audioCtx = new AudioContext();
+const numChannels = 2;
+const sampleRate = audioCtx.sampleRate;
+const bufferSize = Math.round(sampleRate/6);
+console.log(`bufferSize = ${bufferSize}`);
+const bufferTime = bufferSize / sampleRate;
+// console.log(`bufferTime = ${bufferTime}`);
+
+</script>
+<script src="js/glide.js"></script>
+<script src="js/biquad.js"></script>
+<script src="js/crackling.js"></script>
+<script src="js/roaring.js"></script>
+<script src="js/hissing.js"></script>
+<script src="js/sinewave.js"></script>
+
+<script>
+
+let crackle = new Crackling();
+let roar = new Roaring();
+let hiss = new Hissing();
+let sinewave = new SineWave();
+
+
+
+// periodically update the buffers in the sound sources
+// this is not a perfect solution because the timing is not accurate thus leaing
+let interval = bufferTime * 1000; // ms
+let expected = performance.now() + interval;
+setTimeout(step, interval);
+function step() {
+    let dt = performance.now() - expected; // the drift (positive for overshooting)
+    if (dt > interval) {
+        // something really bad happened. Maybe the browser (tab) was inactive?
+        // possibly special handling to avoid futile "catch up" run
+        console.log("step timing error");
+    }
+    // do what is to be done
+    
+    let cracklingSource = audioCtx.createBufferSource();
+	cracklingSource.connect(audioCtx.destination);
+	let roaringSource = audioCtx.createBufferSource();
+	roaringSource.connect(audioCtx.destination);
+	let hissingSource = audioCtx.createBufferSource();
+	hissingSource.connect(audioCtx.destination);
+
+    hissingSource.buffer = hiss.generate();
+    roaringSource.buffer = roar.generate();
+    cracklingSource.buffer = crackle.generate();
+    // sineSource.buffer = sinewave.generate();
+
+    hissingSource.start();
+    roaringSource.start();
+    cracklingSource.start();
+    
+
+/*
+    let sineSource = audioCtx.createBufferSource();
+    sineSource.connect(audioCtx.destination);
+    sineSource.buffer = sinewave.generate();
+    sineSource.start();
+*/
+
+    // setup the next loop
+    expected += interval;
+    setTimeout(step, Math.max(0, interval - dt)); // take into account drift
+}
+
+function setSize(value)
+{
+	crackle.setSize(value);
+	roar.setSize(value);
+	hiss.setSize(value);
+	sinewave.setFreq(value);
+}
+
+</script>
+
+</head>
+<body>
+
+<h1>Fire!</h1>
+
+<button onclick="playABuffer()">Generate</button>
+<input type="range" min="0" max="1" step="0.001" oninput="setSize(this.value)" value="0.5">
+
+
+
+</body></html>
